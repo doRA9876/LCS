@@ -11,14 +11,15 @@ namespace Arihara.GuideSmoke
 
     static void Sample()
     {
-      string path = "D:/Projects/MATLAB/FTLE/results/ftle-200.txt";
-      float[,,] ftle = FileIO.ReadFTLEFile(path, 256, 256, 1);
 
-      for (int ix = 0; ix < 2; ix++)
+      for (int t = 200; t < 900; t += 50)
       {
-        for (int iy = 0; iy < 2; iy++)
+        string path = $"D:/Projects/MATLAB/FTLE/results/ftle-{t}.txt";
+        float[,,] ftle = FileIO.ReadFTLEFile(path, 256, 256, 1);
+
+        using (LCS lcs = new LCS(null, ftle, 256, 256, 1))
         {
-          Console.WriteLine($"{ftle[ix, iy, 0]}");
+          if(!lcs.IsComputable) continue;
         }
       }
     }
