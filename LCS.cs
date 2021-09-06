@@ -29,6 +29,29 @@ namespace Arihara.GuideSmoke
       else isComputable = false;
     }
 
+    public void ShowForwardFTLE() { ShowFTLE(fFTLE); }
+    public void ShowBackwardFTLE() { ShowFTLE(bFTLE); }
+
+    private void ShowFTLE(float[,,] ftle)
+    {
+      if (ftle == null)
+      {
+        Console.WriteLine("FTLE is no data.");
+        return;
+      }
+      
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          for (int iz = 0; iz < lenZ; iz++)
+          {
+            Console.WriteLine($"{ix} {iy} {iz} : {ftle[ix, iy, iz]}");
+          }
+        }
+      }
+    }
+
     public void Dispose() { }
   }
 }
