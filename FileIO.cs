@@ -78,7 +78,7 @@ namespace Arihara.GuideSmoke
           for (int iz = 0; iz < lenZ; iz++)
           {
             string[] data = culums[ix * (lenY * lenZ) + iy * lenZ + iz].Split(' ');
-            if(lenZ > 1) ftle[ix, iy, iz] = float.Parse(data[3]);
+            if (lenZ > 1) ftle[ix, iy, iz] = float.Parse(data[3]);
             else ftle[ix, iy, iz] = float.Parse(data[2]);
           }
         }
@@ -87,7 +87,7 @@ namespace Arihara.GuideSmoke
       return ftle;
     }
 
-    public static void WriteFTLEFile(string path, int t, Vector3[,,] pos, float[,,] ftleField, int lenX, int lenY, int lenZ)
+    public static void WriteFTLEFile(string path, Vector3[,,] pos, float[,,] ftleField, int lenX, int lenY, int lenZ)
     {
       using (StreamWriter sw = new StreamWriter(path))
       {
@@ -109,6 +109,30 @@ namespace Arihara.GuideSmoke
                 float y = pos[ix, iy, iz].Y;
                 float z = pos[ix, iy, iz].Z;
                 sw.WriteLine(string.Format("{0} {1} {2} {3}", x, y, z, ftleField[ix, iy, iz]));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    public static void WriteFTLEFile(string path, float[,,] ftleField, int lenX, int lenY, int lenZ)
+    {
+      using (StreamWriter sw = new StreamWriter(path))
+      {
+        for (int ix = 0; ix < lenX; ix++)
+        {
+          for (int iy = 0; iy < lenY; iy++)
+          {
+            if (lenZ == 1)
+            {
+              sw.WriteLine($"{ix} {iy} {ftleField[ix, iy, 0]}");
+            }
+            else
+            {
+              for (int iz = 0; iz < lenZ; iz++)
+              {
+                sw.WriteLine($"{ix} {iy} {iz} {ftleField[ix, iy, iz]}");
               }
             }
           }
@@ -138,6 +162,30 @@ namespace Arihara.GuideSmoke
                 float y = pos[ix, iy, iz].Y;
                 float z = pos[ix, iy, iz].Z;
                 sw.WriteLine(string.Format("{0} {1} {2} {3}", x, y, z, lcs[ix, iy, iz]));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    public static void WriteLCSFile(string path, int[,,] lcs, int lenX, int lenY, int lenZ)
+    {
+      using (StreamWriter sw = new StreamWriter(path))
+      {
+        for (int ix = 0; ix < lenX; ix++)
+        {
+          for (int iy = 0; iy < lenY; iy++)
+          {
+            if (lenZ == 1)
+            {
+              sw.WriteLine($"{ix} {iy} {lcs[ix, iy, 0]}");
+            }
+            else
+            {
+              for (int iz = 0; iz < lenZ; iz++)
+              {
+                sw.WriteLine($"{ix} {iy} {iz} {lcs[ix, iy, iz]}");
               }
             }
           }

@@ -14,7 +14,7 @@ namespace Arihara.GuideSmoke
     public int skeletonizeNum { get; set; }
     public int gaussianNum { get; set; }
     public int sobelNum { get; set; }
-    public int LcsMethod { get; set; }
+    public string LcsMethodName { get; set; }
     public bool isNormalize { get; set; }
     public bool isSkeletonize { get; set; }
     public float lcsThreshold { get; set; }

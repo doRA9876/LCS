@@ -14,30 +14,33 @@ namespace Arihara.GuideSmoke
 
     static void Sample()
     {
-      Parameter parameter = ReadJson("./parameter.json");
+      Parameter p = ReadJson("./parameter.json");
 
-      for (int t = parameter.startT; t < parameter.endT; t += parameter.integralT)
+      for (int t = p.startT; t < p.endT; t += p.integralT)
       {
         float[,,] fFTLE = null, bFTLE = null;
-        int lenX = parameter.ftleResolutionX;
-        int lenY = parameter.ftleResolutionY;
-        int lenZ = parameter.ftleResolutionZ;
-        if (!string.IsNullOrEmpty(parameter.forwardFTLEPath))
+        int lenX = p.ftleResolutionX;
+        int lenY = p.ftleResolutionY;
+        int lenZ = p.ftleResolutionZ;
+        if (!string.IsNullOrEmpty(p.forwardFTLEPath))
         {
-          string fFTLEPath = parameter.forwardFTLEPath + '/' + $"ftle-{t}.txt";
+          string fFTLEPath = p.forwardFTLEPath + '/' + $"ftle-{t}.txt";
           fFTLE = FileIO.ReadFTLEFile(fFTLEPath, lenX, lenY, lenZ);
         }
 
-        if (!string.IsNullOrEmpty(parameter.backwardFTLEPath))
+        if (!string.IsNullOrEmpty(p.backwardFTLEPath))
         {
-          string bFTLEPath = parameter.backwardFTLEPath + '/' + $"ftle-{t}.txt";
+          string bFTLEPath = p.backwardFTLEPath + '/' + $"ftle-{t}.txt";
           bFTLE = FileIO.ReadFTLEFile(bFTLEPath, lenX, lenY, lenZ);
         }
 
         using (LCS lcs = new LCS(fFTLE, bFTLE, lenX, lenY, lenZ))
         {
           if (!lcs.IsComputable) continue;
-          lcs.ShowForwardFTLE();
+          lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.kappa, p.lcsThreshold, p.skeletonizeNum);
+          lcs.WriteForwardFTLE("./data/FTLE/results", $"ftle-{t}");
+          lcs.WriteBackwardFTLE("./data/FTLE/results", $"ftle-{t}");
+          lcs.WriteLCS("./data/LCS/results", $"lcs-{t}");
         }
       }
     }

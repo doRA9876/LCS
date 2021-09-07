@@ -1,6 +1,6 @@
 {
   "forwardFTLEPath": "",
-  "backwardFTLEPath": "D:/Projects/MATLAB/FTLE/results",
+  "backwardFTLEPath": "D:/Projects/MATLAB/FTLE/SteadyVel_noVC_256x256x1_b",
   "outLCSPath": "D:/Projects/MATLAB/LCS/results",
   "startT" : 100,
   "endT" : 900,
@@ -9,11 +9,11 @@
   "ftleResolutionY": 256,
   "ftleResolutionZ": 1,
   "skeletonizeNum": 20,
-  "gaussianNum": 1,
+  "gaussianNum": 5,
   "sobelNum": 0,
-  "LcsMethod": 0,
+  "LcsMethodName": "Threshold",
   "isNormalize": true,
   "isSkeletonize": true,
-  "lcsThreshold": 0.5,
-  "kappa": 0.01
+  "lcsThreshold": 0.3,
+  "kappa": 0.1
 }
