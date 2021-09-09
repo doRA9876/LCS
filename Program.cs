@@ -34,13 +34,14 @@ namespace Arihara.GuideSmoke
           bFTLE = FileIO.ReadFTLEFile(bFTLEPath, lenX, lenY, lenZ);
         }
 
-        using (LCS lcs = new LCS(fFTLE, bFTLE, lenX, lenY, lenZ))
+        using (LCS lcs = new LCS(fFTLE, bFTLE, lenX, lenY, lenZ, p.deltaX, p.deltaY, p.deltaZ))
         {
           if (!lcs.IsComputable) continue;
-          lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.kappa, p.lcsThreshold, p.skeletonizeNum);
+          lcs.SetParameters(p.kappa, p.lcsThreshold);
+          lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.skeletonizeNum);
           lcs.WriteForwardFTLE("./data/FTLE/results", $"ftle-{t}");
           lcs.WriteBackwardFTLE("./data/FTLE/results", $"ftle-{t}");
-          lcs.WriteLCS("./data/LCS/results", $"lcs-{t}");
+          lcs.WriteLCS(p.outLCSPath, $"lcs-{t}");
         }
       }
     }
