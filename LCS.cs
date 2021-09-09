@@ -4,6 +4,11 @@ namespace Arihara.GuideSmoke
 {
   delegate void LcsMethod(ref bool[,,] region, float[,,] ftle);
 
+  struct AdjacencyList
+  {
+      
+  }
+
   class LCS : IDisposable
   {
     private float[,,] fFTLE = null;
@@ -271,7 +276,6 @@ namespace Arihara.GuideSmoke
         }
       }
 
-
       bool isMatchTemplate(bool[,,] region, int cx, int cy, int[,] template)
       {
         bool isWildcardX = false;
@@ -323,6 +327,15 @@ namespace Arihara.GuideSmoke
         }
         return dst;
       }
+    }
+
+    /*
+      Refer: Florian,F. etal., Interacive Separating Streak Surfaces,(2010)
+      https://ieeexplore.ieee.org/document/5613499
+    */
+    private void SubPixelRigdeRefinement(bool[,,] region, float[,,] ftle)
+    {
+      
     }
 
     private void Normalize(ref float[,,] ftle)
@@ -420,7 +433,6 @@ namespace Arihara.GuideSmoke
     {
       if (fFTLE == null)
       {
-        Console.WriteLine("Forward FTLE is nodata");
         return;
       }
       string path = folderPath + '/' + fileName + "-f.txt";
@@ -431,7 +443,6 @@ namespace Arihara.GuideSmoke
     {
       if (bFTLE == null)
       {
-        Console.WriteLine("Backward FTLE is nodata");
         return;
       }
       string path = folderPath + '/' + fileName + "-b.txt";

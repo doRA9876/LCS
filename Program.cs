@@ -18,21 +18,28 @@ namespace Arihara.GuideSmoke
 
       for (int t = p.startT; t < p.endT; t += p.integralT)
       {
+        Console.WriteLine($"Start LCS Calculation : t = {t}");
+
         float[,,] fFTLE = null, bFTLE = null;
+        bool isLoadingSeccessful = false;
         int lenX = p.ftleResolutionX;
         int lenY = p.ftleResolutionY;
         int lenZ = p.ftleResolutionZ;
         if (!string.IsNullOrEmpty(p.forwardFTLEPath))
         {
           string fFTLEPath = p.forwardFTLEPath + '/' + $"ftle-{t}.txt";
-          fFTLE = FileIO.ReadFTLEFile(fFTLEPath, lenX, lenY, lenZ);
+          if(FileIO.LoadFTLEFile(fFTLEPath, ref fFTLE, lenX, lenY, lenZ)) 
+            isLoadingSeccessful = true;
         }
 
         if (!string.IsNullOrEmpty(p.backwardFTLEPath))
         {
           string bFTLEPath = p.backwardFTLEPath + '/' + $"ftle-{t}.txt";
-          bFTLE = FileIO.ReadFTLEFile(bFTLEPath, lenX, lenY, lenZ);
+          if(FileIO.LoadFTLEFile(bFTLEPath, ref bFTLE, lenX, lenY, lenZ))
+            isLoadingSeccessful = true;
         }
+
+        if(!isLoadingSeccessful) continue;
 
         using (LCS lcs = new LCS(fFTLE, bFTLE, lenX, lenY, lenZ, p.deltaX, p.deltaY, p.deltaZ))
         {
@@ -43,6 +50,8 @@ namespace Arihara.GuideSmoke
           lcs.WriteBackwardFTLE("./data/FTLE/results", $"ftle-{t}");
           lcs.WriteLCS(p.outLCSPath, $"lcs-{t}");
         }
+
+        Console.WriteLine($"End LCS Calculation");
       }
     }
 
