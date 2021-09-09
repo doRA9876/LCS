@@ -2,7 +2,7 @@ using System;
 
 namespace Arihara.GuideSmoke
 {
-  delegate void LcsMethod(ref float[,,] ftle, ref bool[,,] region, float kappa, float threshold);
+  delegate void LcsMethod(ref bool[,,] region, float[,,] ftle);
 
   class LCS : IDisposable
   {
@@ -11,7 +11,13 @@ namespace Arihara.GuideSmoke
     private bool[,,] fRegion, bRegion;
     private int[,,] lcs;
     private int lenX, lenY, lenZ;
+    private float deltaX, deltaY, deltaZ;
     private bool isComputable;
+
+    #region Parameters
+    private float threshold = 0.5f;
+    private float kappa = 0.1f;
+    #endregion
 
     #region Accessor
     public float[,,] ForwardFTLE
@@ -28,34 +34,37 @@ namespace Arihara.GuideSmoke
     }
     #endregion
 
-    public LCS(float[,,] forwardFTLE, float[,,] backwardFTLE, int lenX, int lenY, int lenZ)
+    public LCS(float[,,] forwardFTLE, float[,,] backwardFTLE, int lenX, int lenY, int lenZ, float dx, float dy, float dz)
     {
       if (forwardFTLE != null) fFTLE = forwardFTLE;
       if (backwardFTLE != null) bFTLE = backwardFTLE;
       this.lenX = lenX;
       this.lenY = lenY;
       this.lenZ = lenZ;
+      this.deltaX = dx;
+      this.deltaY = dy;
+      this.deltaZ = dz;
       lcs = new int[lenX, lenY, lenZ];
 
       if (fFTLE != null || bFTLE != null) isComputable = true;
       else isComputable = false;
     }
 
-    public void Calculation(string methodName, int gaussianNum, float kappa, float threshold, int skeletonizeNum)
+    public void Calculation(string methodName, int gaussianNum, int skeletonizeNum)
     {
       int methodNum = 0;
-      LcsMethod method;
+      LcsMethod lcsMethod;
       if (string.Equals(methodName, "Hessian")) methodNum = 1;
       if (string.Equals(methodName, "Threshold")) methodNum = 2;
 
       switch (methodNum)
       {
         case 1:
-          method = ByHessian;
+          lcsMethod = ByHessian;
           break;
 
         case 2:
-          method = BySimpleThreshold;
+          lcsMethod = BySimpleThreshold;
           break;
 
         default:
@@ -69,7 +78,7 @@ namespace Arihara.GuideSmoke
         {
           GaussianFilter2D(ref fFTLE);
         }
-        method(ref fFTLE, ref fRegion, kappa, threshold);
+        lcsMethod(ref fRegion, fFTLE);
         Skeletonization(ref fRegion, skeletonizeNum);
       }
 
@@ -79,7 +88,7 @@ namespace Arihara.GuideSmoke
         {
           GaussianFilter2D(ref bFTLE);
         }
-        method(ref bFTLE, ref bRegion, kappa, threshold);
+        lcsMethod(ref bRegion, bFTLE);
         Skeletonization(ref bRegion, skeletonizeNum);
       }
 
@@ -96,8 +105,16 @@ namespace Arihara.GuideSmoke
       }
     }
 
-    public void BySimpleThreshold(ref float[,,] ftle, ref bool[,,] region, float kappa, float threshold)
+    public void SetParameters(float kp, float thre)
     {
+      this.kappa = kp;
+      this.threshold = thre;
+    }
+
+    public void BySimpleThreshold(ref bool[,,] region, float[,,] ftle)
+    {
+      Normalize(ref ftle);
+
       region = new bool[lenX, lenY, lenZ];
       float maxEigen = -100;
       for (int ix = 0; ix < lenX; ix++)
@@ -112,13 +129,13 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          if ((maxEigen * threshold) < ftle[ix, iy, 0]) region[ix, iy, 0] = true;
+          if ((maxEigen * this.threshold) < ftle[ix, iy, 0]) region[ix, iy, 0] = true;
           else region[ix, iy, 0] = false;
         }
       }
     }
 
-    private void ByHessian(ref float[,,] ftle, ref bool[,,] region, float kappa, float threshold)
+    private void ByHessian(ref bool[,,] region, float[,,] ftle)
     {
       if (lenZ > 1)
       {
@@ -133,10 +150,13 @@ namespace Arihara.GuideSmoke
         {
           for (int iy = 0; iy < lenY; iy++)
           {
-            float dxx = (GetCoordValue(ftle, ix + 1, iy, 0) + GetCoordValue(ftle, ix - 1, iy, 0) - 2 * GetCoordValue(ftle, ix, iy, 0));
-            float dyy = (GetCoordValue(ftle, ix, iy + 1, 0) + GetCoordValue(ftle, ix, iy - 1, 0) - 2 * GetCoordValue(ftle, ix, iy, 0));
+            float dxx = (GetCoordValue(ftle, ix + 1, iy, 0) + GetCoordValue(ftle, ix - 1, iy, 0)
+             - 2 * GetCoordValue(ftle, ix, iy, 0)) / (deltaX * deltaX);
+            float dyy = (GetCoordValue(ftle, ix, iy + 1, 0) + GetCoordValue(ftle, ix, iy - 1, 0)
+             - 2 * GetCoordValue(ftle, ix, iy, 0)) / (deltaY * deltaY);
             float dxdy = (GetCoordValue(ftle, ix + 1, iy + 1, 0) - GetCoordValue(ftle, ix - 1, iy + 1, 0)
-                        - GetCoordValue(ftle, ix + 1, iy - 1, 0) + GetCoordValue(ftle, ix - 1, iy - 1, 0));
+                        - GetCoordValue(ftle, ix + 1, iy - 1, 0) + GetCoordValue(ftle, ix - 1, iy - 1, 0)) 
+                        / (deltaX * deltaY);
             secondDerivative[ix, iy, 0] = dxx;
             secondDerivative[ix, iy, 1] = dyy;
             secondDerivative[ix, iy, 2] = dxdy;
@@ -171,7 +191,7 @@ namespace Arihara.GuideSmoke
         {
           for (int iy = 0; iy < lenY; iy++)
           {
-            if (eigenValue[ix, iy] <= (kappa * maxEigen) && (maxFTLE * threshold) <= ftle[ix, iy, 0]) region[ix, iy, 0] = true;
+            if (eigenValue[ix, iy] <= (this.kappa * maxEigen) && (maxFTLE * this.threshold) <= ftle[ix, iy, 0]) region[ix, iy, 0] = true;
             else region[ix, iy, 0] = false;
           }
         }
@@ -302,6 +322,35 @@ namespace Arihara.GuideSmoke
           dst = tmp;
         }
         return dst;
+      }
+    }
+
+    private void Normalize(ref float[,,] ftle)
+    {
+      float min = ftle[0, 0, 0];
+      float max = min;
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          for (int iz = 0; iz < lenZ; iz++)
+          {
+            float num = ftle[ix, iy, iz];
+            if (num < min) min = num;
+            if (max < num) max = num;
+          }
+        }
+      }
+
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          for (int iz = 0; iz < lenZ; iz++)
+          {
+            ftle[ix, iy, iz] = (ftle[ix, iy, iz] - min) / (max - min);
+          }
+        }
       }
     }
 
