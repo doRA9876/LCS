@@ -6,9 +6,9 @@ namespace Arihara.GuideSmoke
 {
   struct AdjacencyList
   {
-    public int ix, iy, iz;
+    public int ix, iy;
     public List<AdjacencyList> lists;
-    public Vector3 pos;
+    public Vector2 pos;
   }
 
   /*
@@ -17,13 +17,13 @@ namespace Arihara.GuideSmoke
   */
   class RidgeRefine2D
   {
-    bool[,,] region;
-    float[,,] ftle;
-    Vector3[,,] positions;
-    Vector3[,,] gradients;
+    bool[,] region;
+    float[,] ftle;
+    Vector2[,] positions;
+    Vector2[,] gradients;
     List<AdjacencyList> headLists;
-    int lenX, lenY, lenZ;
-    float deltaX, deltaY, deltaZ;
+    int lenX, lenY;
+    float deltaX, deltaY;
 
     #region Paramters
     float delta = 0.5f;
@@ -32,17 +32,15 @@ namespace Arihara.GuideSmoke
     #endregion
 
 
-    public RidgeRefine(bool[,,] r, float[,,] f, Vector3[,,] p, int lX, int lY, int lZ, float dx, float dy, float dz)
+    public RidgeRefine2D(bool[,] r, float[,] f, Vector2[,] p, int lX, int lY, float dx, float dy)
     {
       this.region = r;
       this.ftle = f;
       this.positions = p;
       this.lenX = lX;
       this.lenY = lY;
-      this.lenZ = lZ;
       this.deltaX = dx;
       this.deltaY = dy;
-      this.deltaZ = dz;
     }
 
     public void SetParameters(float d, float s, float o)
@@ -63,16 +61,14 @@ namespace Arihara.GuideSmoke
       Dictionary<(int, int), Vector2> new_positions = new Dictionary<(int, int), Vector2>();
       foreach (var adj in headLists)
       {
-        if (lenZ != 1) continue;
         if (adj.lists.Count == 1)
         {
           int ix = adj.ix;
           int iy = adj.iy;
-          int iz = adj.iz;
-          Vector2 nv = UnitLengthPerpendicular2D(new Vector2(adj.pos.X, adj.pos.Y));
-          Vector2 g = new Vector2(gradients[ix, iy, iz].X, gradients[ix, iy, iz].Y);
+          Vector2 nv = UnitLengthPerpendicular2D(adj.pos);
+          Vector2 g = gradients[ix, iy];
           Vector2 rv = Vector2.Dot(nv, g) * nv;
-          Vector2 p = new Vector2(positions[ix, iy, iz].X, positions[ix, iy, iz].Y);
+          Vector2 p = positions[ix, iy];
           new_positions.Add((ix, iy), p + rv * this.delta);
         }
         else
@@ -82,7 +78,7 @@ namespace Arihara.GuideSmoke
         foreach (var np in new_positions)
         {
           (int ix, int iy) index = np.Key;
-          positions[index.ix, index.iy, 0] = np.Value;
+          positions[index.ix, index.iy] = np.Value;
         }
       }
 
@@ -102,19 +98,15 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          for (int iz = 0; iz < lenZ; iz++)
+          if (ix == 0 || iy == 0 || ix == lenX - 1 || iy == lenY - 1)
           {
-            if (ix == 0 || iy == 0 || iz == 0 || ix == lenX - 1 || iy == lenY - 1 || iz == lenZ - 1)
-            {
-              gradients[ix, iy, iz] = Vector3.Zero;
-            }
-            else
-            {
-              float dx = (ftle[ix + 1, iy, iz] - ftle[ix - 1, iy, iz]) / (2 * deltaX);
-              float dy = (ftle[ix, iy + 1, iz] - ftle[ix, iy - 1, iz]) / (2 * deltaY);
-              float dz = (ftle[ix, iy, iz + 1] - ftle[ix, iy, iz - 1]) / (2 * deltaZ);
-              gradients[ix, iy, iz] = new Vector3(dx, dy, dz);
-            }
+            gradients[ix, iy] = Vector2.Zero;
+          }
+          else
+          {
+            float dx = (ftle[ix + 1, iy] - ftle[ix - 1, iy]) / (2 * deltaX);
+            float dy = (ftle[ix, iy + 1] - ftle[ix, iy - 1]) / (2 * deltaY);
+            gradients[ix, iy] = new Vector2(dx, dy);
           }
         }
       }
@@ -122,43 +114,40 @@ namespace Arihara.GuideSmoke
 
     private void ConstructAdjList()
     {
-      bool[,,] isAddedGraph = new bool[lenX, lenY, lenZ];
+      bool[,] isAddedGraph = new bool[lenX, lenY];
       headLists = new List<AdjacencyList>();
       for (int ix = 0; ix < lenX; ix++)
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          for (int iz = 0; iz < lenZ; iz++)
-          {
-            AdjacencyList head = new AdjacencyList();
-            headLists.Add(head);
-            SetValue(ref head, ix, iy, iz);
-          }
+          AdjacencyList head = new AdjacencyList();
+          headLists.Add(head);
+          SetValue(ref head, ix, iy);
         }
       }
 
-      void SetValue(ref AdjacencyList al, int ix, int iy, int iz)
+      void SetValue(ref AdjacencyList al, int ix, int iy)
       {
         bool N = false;
         bool W = false;
         bool S = false;
         bool E = false;
-        Vector3 p = positions[ix, iy, iz];
-        al.pos = new Vector3(p.X, p.Y, p.Z);
+        Vector2 p = positions[ix, iy];
+        al.pos = new Vector2(p.X, p.Y);
         al.lists = new List<AdjacencyList>();
         al.ix = ix;
         al.iy = iy;
-        al.iz = iz;
-        isAddedGraph[ix, iy, iz] = true;
+
+        isAddedGraph[ix, iy] = true;
 
         /* West */
         if (0 < ix)
         {
-          if (region[ix - 1, iy, iz] && !isAddedGraph[ix - 1, iy, iz])
+          if (region[ix - 1, iy] && !isAddedGraph[ix - 1, iy])
           {
             AdjacencyList w = new AdjacencyList();
             al.lists.Add(w);
-            SetValue(ref w, ix - 1, iy, iz);
+            SetValue(ref w, ix - 1, iy);
             W = true;
           }
         }
@@ -166,11 +155,11 @@ namespace Arihara.GuideSmoke
         /* East */
         if (ix < lenX - 1)
         {
-          if (region[ix + 1, iy, iz] && !isAddedGraph[ix + 1, iy, iz])
+          if (region[ix + 1, iy] && !isAddedGraph[ix + 1, iy])
           {
             AdjacencyList e = new AdjacencyList();
             al.lists.Add(e);
-            SetValue(ref e, ix + 1, iy, iz);
+            SetValue(ref e, ix + 1, iy);
             E = true;
           }
         }
@@ -178,11 +167,11 @@ namespace Arihara.GuideSmoke
         /* North */
         if (0 < iy)
         {
-          if (region[ix, iy - 1, iz] && !isAddedGraph[ix, iy - 1, iz])
+          if (region[ix, iy - 1] && !isAddedGraph[ix, iy - 1])
           {
             AdjacencyList n = new AdjacencyList();
             al.lists.Add(n);
-            SetValue(ref n, ix, iy - 1, iz);
+            SetValue(ref n, ix, iy - 1);
             N = true;
           }
         }
@@ -190,11 +179,11 @@ namespace Arihara.GuideSmoke
         /* South */
         if (iy < lenY - 1)
         {
-          if (region[ix, iy + 1, iz] && !isAddedGraph[ix, iy + 1, iz])
+          if (region[ix, iy + 1] && !isAddedGraph[ix, iy + 1])
           {
             AdjacencyList s = new AdjacencyList();
             al.lists.Add(s);
-            SetValue(ref s, ix, iy + 1, iz);
+            SetValue(ref s, ix, iy + 1);
             S = true;
           }
         }
@@ -202,44 +191,44 @@ namespace Arihara.GuideSmoke
         /* NW */
         if (!(N || W) && 0 < iy && 0 < ix)
         {
-          if (region[ix - 1, iy - 1, iz] && !isAddedGraph[ix - 1, iy - 1, iz])
+          if (region[ix - 1, iy - 1] && !isAddedGraph[ix - 1, iy - 1])
           {
             AdjacencyList nw = new AdjacencyList();
             al.lists.Add(nw);
-            SetValue(ref nw, ix - 1, iy - 1, iz);
+            SetValue(ref nw, ix - 1, iy - 1);
           }
         }
 
         /* NE */
         if (!(N || E) && 0 < iy && ix < lenX - 1)
         {
-          if (region[ix + 1, iy - 1, iz] && !isAddedGraph[ix + 1, iy - 1, iz])
+          if (region[ix + 1, iy - 1] && !isAddedGraph[ix + 1, iy - 1])
           {
             AdjacencyList ne = new AdjacencyList();
             al.lists.Add(ne);
-            SetValue(ref ne, ix + 1, iy - 1, iz);
+            SetValue(ref ne, ix + 1, iy - 1);
           }
         }
 
         /* SW */
         if (!(S || W) && iy < lenY - 1 && 0 < ix)
         {
-          if (region[ix - 1, iy + 1, iz] && !isAddedGraph[ix - 1, iy + 1, iz])
+          if (region[ix - 1, iy + 1] && !isAddedGraph[ix - 1, iy + 1])
           {
             AdjacencyList sw = new AdjacencyList();
             al.lists.Add(sw);
-            SetValue(ref sw, ix - 1, iy + 1, iz);
+            SetValue(ref sw, ix - 1, iy + 1);
           }
         }
 
         /* SE */
         if (!(S || E) && iy < lenY - 1 && ix < lenX - 1)
         {
-          if (region[ix + 1, iy + 1, iz] && !isAddedGraph[ix + 1, iy + 1, iz])
+          if (region[ix + 1, iy + 1] && !isAddedGraph[ix + 1, iy + 1])
           {
             AdjacencyList se = new AdjacencyList();
             al.lists.Add(se);
-            SetValue(ref se, ix + 1, iy + 1, iz);
+            SetValue(ref se, ix + 1, iy + 1);
           }
         }
       }
