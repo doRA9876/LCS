@@ -46,8 +46,6 @@ namespace Arihara.GuideSmoke
           if (!lcs.IsComputable) continue;
           lcs.SetParameters(p.kappa, p.lcsThreshold);
           lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.skeletonizeNum);
-          lcs.WriteForwardFTLE("./data/FTLE/results", $"ftle-{t}");
-          lcs.WriteBackwardFTLE("./data/FTLE/results", $"ftle-{t}");
           lcs.WriteLCS(p.outLCSPath, $"lcs-{t}");
         }
 
