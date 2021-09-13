@@ -15,5 +15,11 @@
   "gaussianNum": 5,
   "LcsMethodName": "Threshold",
   "lcsThreshold": 0.5,
-  "kappa": 0.1
+  "kappa": 0.1,
+  "refinementIteration" : 50,
+  "delta" : 0.5,
+  "sigma" : 0.25,
+  "omega" : 0.05,
+  "d_max" : 5,
+  "k_cut": 5
 }

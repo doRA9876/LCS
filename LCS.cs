@@ -28,6 +28,14 @@ namespace Arihara.GuideSmoke
     {
       get { return bFTLE; }
     }
+    public bool[,,] ForwardRegion
+    {
+      get { return fRegion; }
+    }
+    public bool[,,] BackwardRegion
+    {
+      get { return bRegion; }
+    }
     public bool IsComputable
     {
       get { return isComputable; }

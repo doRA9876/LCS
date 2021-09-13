@@ -17,21 +17,23 @@ namespace Arihara.GuideSmoke
     Refer: Florian,F. etal., Interacive Separating Streak Surfaces,(2010)
     https://ieeexplore.ieee.org/document/5613499
   */
-  class RidgeRefine2D
+  class RidgeRefine2D : IDisposable
   {
     bool[,] region;
     float[,] ftle;
     Vector2[,] positions;
+    Dictionary<(int, int), Vector2> new_positions;
     Vector2[,] gradients;
     Pixel[,] pixels;
     int lenX, lenY;
     float deltaX, deltaY;
 
     #region Paramters
+    int refinementIteration = 50;
     float delta = 0.5f;
     float sigma = 0.25f;
     float omega = 0.05f;
-    float d_max;
+    float d_max = 5;
     int k_cut = 5;
     #endregion
 
@@ -47,31 +49,55 @@ namespace Arihara.GuideSmoke
       this.deltaY = dy;
     }
 
-    public void SetParameters(float d, float s, float o, float d_m, int k)
+    public void SetParameters(int refineIter, float delt, float sig, float omg, float d_mx, int kc)
     {
-      this.delta = d;
-      this.sigma = s;
-      this.omega = o;
-      this.d_max = d_m;
-      this.k_cut = k;
+      this.refinementIteration = refineIter;
+      this.delta = delt;
+      this.sigma = sig;
+      this.omega = omg;
+      this.d_max = d_mx;
+      this.k_cut = kc;
     }
 
     public void SubPixelRidgeRefinement()
     {
       ConstructAdjList();
       ComputeFTLEGradient();
-      Refinements();
+      for (int i = 0; i < refinementIteration; i++)
+      {
+        new_positions = new Dictionary<(int, int), Vector2>();
+        Refinements();
+        PostProcess();
+        UpdatePos();
+        new_positions = null;
+      }
+    }
+
+    public bool[,] GetResults()
+    {
+      bool[,] result = new bool[lenX, lenY];
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          if (pixels[ix, iy].isInvalid) continue;
+          Vector2 v = pixels[ix, iy].pos;
+          int x = (int)(v.X / deltaX);
+          int y = (int)(v.Y / deltaY);
+          result[x, y] = true;
+        }
+      }
+      return result;
     }
 
     private void Refinements()
     {
-      Dictionary<(int, int), Vector2> new_positions = new Dictionary<(int, int), Vector2>();
       for (int ix = 0; ix < lenX; ix++)
       {
         for (int iy = 0; iy < lenY; iy++)
         {
           Pixel you = pixels[ix, iy];
-          if(you.isInvalid) continue;
+          if (you.isInvalid) continue;
           if (you.adjacents.Count == 1)
           {
             Pixel adjacent = you.adjacents[0];
@@ -95,12 +121,6 @@ namespace Arihara.GuideSmoke
             Vector2 new_pv = (1 - this.sigma) * you.pos + this.sigma * pu / you.adjacents.Count + this.delta * rv;
             new_positions.Add((ix, iy), new_pv);
           }
-
-          foreach (var np in new_positions)
-          {
-            (int ix, int iy) index = np.Key;
-            positions[index.ix, index.iy] = np.Value;
-          }
         }
       }
 
@@ -112,10 +132,69 @@ namespace Arihara.GuideSmoke
         float k1 = -b * k2 / a;
         return new Vector2(k1, k2);
       }
+    }
 
-      void PostProcess()
+    private void PostProcess()
+    {
+      Dictionary<(int, int), float> new_dv = new Dictionary<(int, int), float>();
+      for (int ix = 0; ix < lenX; ix++)
       {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          Pixel you = pixels[ix, iy];
+          if (you.isInvalid) continue;
+          if (you.adjacents.Count <= 2)
+          {
+            float sum = 0;
+            foreach (Pixel adjacent in you.adjacents)
+            {
+              sum += adjacent.dv;
+            }
+            float nd = (1 - this.omega) * you.dv + this.omega / you.adjacents.Count * sum + (new_positions[(ix, iy)] - you.pos).Length();
+            new_dv.Add((ix, iy), nd);
+          }
+          else
+          {
+            float nd = you.dv + (new_positions[(ix, iy)] - you.pos).Length();
+            new_dv.Add((ix, iy), nd);
+          }
+        }
+      }
 
+      foreach (var nd in new_dv)
+      {
+        (int ix, int iy) index = nd.Key;
+        pixels[index.ix, index.iy].dv = nd.Value;
+      }
+
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          if (pixels[ix, iy].dv > this.d_max)
+          {
+            Kcut(pixels[ix, iy], this.k_cut);
+          }
+        }
+      }
+
+      void Kcut(Pixel px, int k)
+      {
+        if (k <= 0) return;
+        px.isInvalid = true;
+        foreach (var adjacent in px.adjacents)
+        {
+          Kcut(adjacent, k - 1);
+        }
+      }
+    }
+
+    private void UpdatePos()
+    {
+      foreach (var np in new_positions)
+      {
+        (int ix, int iy) index = np.Key;
+        pixels[index.ix, index.iy].pos = np.Value;
       }
     }
 
@@ -284,5 +363,7 @@ namespace Arihara.GuideSmoke
         }
       }
     }
+
+    public void Dispose() { }
   }
 }
