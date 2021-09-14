@@ -81,7 +81,10 @@ namespace Arihara.GuideSmoke
             ridgeRefine.SetParameters(p.refinementIteration, p.delta, p.simga, p.omega, p.d_max, p.k_cut);
             ridgeRefine.SubPixelRidgeRefinement();
             // ridgeRefine.ShowPixelInfo();
-            ridgeRefine.GetResults();
+            int[,] result = ridgeRefine.GetResults();
+            string path = p.outLCSPath + '/' + $"lcs-{t}.txt";
+            // FileIO.WriteLCSFile(path, Array2DTo3D(result, 1), lenX, lenY, lenZ);
+            // FileIO.WriteGradientFile($"./data/gradients-{t}.txt", ridgeRefine.Gradients, lenX, lenY);
           }
         }
 
@@ -115,6 +118,24 @@ namespace Arihara.GuideSmoke
         for (int iy = 0; iy < ly; iy++)
         {
           output[ix, iy] = input[ix, iy, z];
+        }
+      }
+      return output;
+    }
+
+    static T[,,] Array2DTo3D<T>(T[,] input, int lenZ)
+    {
+      int lx = input.GetLength(0);
+      int ly = input.GetLength(1);
+      T[,,] output = new T[lx, ly, lenZ];
+      for (int ix = 0; ix < lx; ix++)
+      {
+        for (int iy = 0; iy < ly; iy++)
+        {
+          for (int iz = 0; iz < lenZ; iz++)
+          {
+            output[ix, iy, iz] = input[ix, iy];
+          }
         }
       }
       return output;

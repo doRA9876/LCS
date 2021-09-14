@@ -37,6 +37,11 @@ namespace Arihara.GuideSmoke
     int k_cut = 5;
     #endregion
 
+    public Vector2[,] Gradients
+    {
+      get { return gradients; }
+    }
+
 
     public RidgeRefine2D(bool[,] r, float[,] f, Vector2[,] p, int lX, int lY, float dx, float dy)
     {
@@ -77,18 +82,22 @@ namespace Arihara.GuideSmoke
       }
     }
 
-    public bool[,] GetResults()
+    public int[,] GetResults()
     {
-      bool[,] result = new bool[lenX, lenY];
+      int[,] result = new int[lenX, lenY];
       for (int ix = 0; ix < lenX; ix++)
       {
         for (int iy = 0; iy < lenY; iy++)
         {
           if (!isValidPixel(ix, iy)) continue;
           Vector2 v = pixels[ix, iy].pos;
-          int x = (int)(v.X * deltaX);
-          int y = (int)(v.Y * deltaY);
-          result[x, y] = true;
+          int x = (int)(v.X / deltaX);
+          int y = (int)(v.Y / deltaY);
+          if (x < 0) x = 0;
+          if (lenX - 1 < x) x = lenX - 1;
+          if (y < 0) y = 0;
+          if (lenY - 1 < y) y = lenY - 1;
+          result[x, y] = 1;
         }
       }
       return result;
@@ -116,7 +125,7 @@ namespace Arihara.GuideSmoke
         {
           if (!isValidPixel(ix, iy)) continue;
           Pixel you = pixels[ix, iy];
-          if(you.adjacents.Count == 0) continue;
+          if (you.adjacents.Count == 0) continue;
           if (you.adjacents.Count == 1)
           {
             Pixel adjacent = you.adjacents[0];
@@ -172,7 +181,7 @@ namespace Arihara.GuideSmoke
         {
           if (!isValidPixel(ix, iy)) continue;
           Pixel you = pixels[ix, iy];
-          if(you.adjacents.Count == 0) continue;
+          if (you.adjacents.Count == 0) continue;
           if (you.adjacents.Count <= 2)
           {
             float sum = 0;
@@ -188,6 +197,23 @@ namespace Arihara.GuideSmoke
             float nd = you.dv + (new_positions[(ix, iy)] - you.pos).Length();
             new_dv.Add((ix, iy), nd);
           }
+          /*
+          if (you.adjacents.Count <= 2)
+          {
+            float nd = you.dv + (new_positions[(ix, iy)] - you.pos).Length();
+            new_dv.Add((ix, iy), nd);
+          }
+          else
+          {
+            float sum = 0;
+            foreach (Pixel adjacent in you.adjacents)
+            {
+              sum += adjacent.dv;
+            }
+            float nd = (1 - this.omega) * you.dv + this.omega / you.adjacents.Count * sum + (new_positions[(ix, iy)] - you.pos).Length();
+            new_dv.Add((ix, iy), nd);
+          }
+          */
         }
       }
 

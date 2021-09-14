@@ -54,6 +54,8 @@ namespace Arihara.GuideSmoke
       return true;
     }
 
+
+
     public static bool LoadFTLEFile(string path, ref float[,,] ftle, int lenX, int lenY, int lenZ)
     {
       if (!File.Exists(path))
@@ -202,6 +204,20 @@ namespace Arihara.GuideSmoke
           for (int iy = 0; iy < lenY; iy++)
           {
             sw.WriteLine(string.Format("{0} {1} {2} {3} ", pos[ix, iy].X, pos[ix, iy].Y, vel[ix, iy].X, vel[ix, iy].Y));
+          }
+        }
+      }
+    }
+
+    public static void WriteGradientFile(string path, Vector2[,] gradient, int lenX, int lenY)
+    {
+      using (StreamWriter sw = new StreamWriter(path))
+      {
+        for (int ix = 0; ix < lenX; ix++)
+        {
+          for (int iy = 0; iy < lenY; iy++)
+          {
+            sw.WriteLine(string.Format("{0} {1} {2} {3} ", ix, iy, gradient[ix, iy].X, gradient[ix, iy].Y));
           }
         }
       }
