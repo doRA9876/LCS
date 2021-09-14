@@ -80,6 +80,8 @@ namespace Arihara.GuideSmoke
             Console.Write("Start Backward FTLE Ridge Refine");
             ridgeRefine.SetParameters(p.refinementIteration, p.delta, p.simga, p.omega, p.d_max, p.k_cut);
             ridgeRefine.SubPixelRidgeRefinement();
+            // ridgeRefine.ShowPixelInfo();
+            ridgeRefine.GetResults();
           }
         }
 

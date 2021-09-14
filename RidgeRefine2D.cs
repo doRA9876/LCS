@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace Arihara.GuideSmoke
 {
-  struct Pixel
+  class Pixel
   {
     public bool isInvalid;
     public int ix, iy;
@@ -47,6 +47,8 @@ namespace Arihara.GuideSmoke
       this.lenY = lY;
       this.deltaX = dx;
       this.deltaY = dy;
+      this.gradients = new Vector2[lenX, lenY];
+      this.pixels = new Pixel[lenX, lenY];
     }
 
     public void SetParameters(int refineIter, float delt, float sig, float omg, float d_mx, int kc)
@@ -65,10 +67,12 @@ namespace Arihara.GuideSmoke
       ComputeFTLEGradient();
       for (int i = 0; i < refinementIteration; i++)
       {
+        Console.WriteLine($"Start Refinement : Number {i}");
         new_positions = new Dictionary<(int, int), Vector2>();
         Refinements();
         PostProcess();
         UpdatePos();
+        GetResults();
         new_positions = null;
       }
     }
@@ -80,14 +84,28 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          if (pixels[ix, iy].isInvalid) continue;
+          if (!isValidPixel(ix, iy)) continue;
           Vector2 v = pixels[ix, iy].pos;
-          int x = (int)(v.X / deltaX);
-          int y = (int)(v.Y / deltaY);
+          int x = (int)(v.X * deltaX);
+          int y = (int)(v.Y * deltaY);
           result[x, y] = true;
         }
       }
       return result;
+    }
+
+    public void ShowPixelInfo()
+    {
+      for (int ix = 0; ix < lenX; ix++)
+      {
+        for (int iy = 0; iy < lenY; iy++)
+        {
+          if (!isValidPixel(ix, iy)) continue;
+          Pixel you = pixels[ix, iy];
+          Console.WriteLine($"ix:{ix}, iy:{iy}");
+          Console.WriteLine($"Positions({you.pos.X}, {you.pos.Y})");
+        }
+      }
     }
 
     private void Refinements()
@@ -96,15 +114,17 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
+          if (!isValidPixel(ix, iy)) continue;
           Pixel you = pixels[ix, iy];
-          if (you.isInvalid) continue;
+          if(you.adjacents.Count == 0) continue;
           if (you.adjacents.Count == 1)
           {
             Pixel adjacent = you.adjacents[0];
             Vector2 nv = UnitLengthPerpendicular2D(adjacent.pos - you.pos);
             Vector2 g = gradients[adjacent.ix, adjacent.iy];
             Vector2 rv = Vector2.Dot(nv, g) * nv;
-            Vector2 new_pv = you.pos + this.delta * rv;
+            Vector2 new_pv = new Vector2();
+            new_pv = you.pos + this.delta * rv;
             new_positions.Add((ix, iy), new_pv);
           }
           else
@@ -118,7 +138,8 @@ namespace Arihara.GuideSmoke
               rv += Vector2.Dot(nv, g) * nv;
               pu += adjacent.pos;
             }
-            Vector2 new_pv = (1 - this.sigma) * you.pos + this.sigma * pu / you.adjacents.Count + this.delta * rv;
+            Vector2 new_pv = new Vector2();
+            new_pv = (1 - this.sigma) * you.pos + this.sigma * pu / you.adjacents.Count + this.delta * rv;
             new_positions.Add((ix, iy), new_pv);
           }
         }
@@ -126,10 +147,18 @@ namespace Arihara.GuideSmoke
 
       Vector2 UnitLengthPerpendicular2D(Vector2 v)
       {
-        float a = v.X;
-        float b = v.Y;
-        float k2 = (float)Math.Sqrt((a * a) / (a * a + b * b));
-        float k1 = -b * k2 / a;
+        float x = v.X;
+        float y = v.Y;
+
+        if (x == 0 && y == 0) return Vector2.Zero;
+        if (x == 0 ^ y == 0)
+        {
+          if (x == 0) return new Vector2(1, 0);
+          else return new Vector2(0, 1);
+        }
+
+        float k2 = (float)Math.Sqrt((x * x) / (x * x + y * y));
+        float k1 = -y * k2 / x;
         return new Vector2(k1, k2);
       }
     }
@@ -141,8 +170,9 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
+          if (!isValidPixel(ix, iy)) continue;
           Pixel you = pixels[ix, iy];
-          if (you.isInvalid) continue;
+          if(you.adjacents.Count == 0) continue;
           if (you.adjacents.Count <= 2)
           {
             float sum = 0;
@@ -171,6 +201,9 @@ namespace Arihara.GuideSmoke
       {
         for (int iy = 0; iy < lenY; iy++)
         {
+          if (!region[ix, iy]) continue;
+          Pixel you = pixels[ix, iy];
+          if (you.isInvalid) continue;
           if (pixels[ix, iy].dv > this.d_max)
           {
             Kcut(pixels[ix, iy], this.k_cut);
@@ -221,13 +254,19 @@ namespace Arihara.GuideSmoke
     private void ConstructAdjList()
     {
       bool[,] isAddedPixels = new bool[lenX, lenY];
-      pixels = new Pixel[lenX, lenY];
       for (int ix = 0; ix < lenX; ix++)
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          if (region[ix, iy] && !isAddedPixels[ix, iy]) pixels[ix, iy] = new Pixel();
-          SetValue(ref pixels[ix, iy], ix, iy);
+          if (region[ix, iy])
+          {
+            if (!isAddedPixels[ix, iy]) pixels[ix, iy] = new Pixel();
+            SetValue(ref pixels[ix, iy], ix, iy);
+          }
+          else
+          {
+            pixels[ix, iy] = null;
+          }
         }
       }
 
@@ -362,6 +401,15 @@ namespace Arihara.GuideSmoke
           }
         }
       }
+    }
+
+    private bool isValidPixel(int ix, int iy)
+    {
+      if (region[ix, iy])
+      {
+        if (!pixels[ix, iy].isInvalid) return true;
+      }
+      return false;
     }
 
     public void Dispose() { }

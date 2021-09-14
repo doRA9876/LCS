@@ -350,3 +350,6 @@ MigrationBackup/
 
 # Simulation data
 data/
+
+# VSCode Config
+.vscode
