@@ -11,6 +11,7 @@ namespace Arihara.GuideSmoke
     static void Main(string[] args)
     {
       Sample();
+      // ConstractDataset();
     }
 
     static void Sample()
@@ -47,7 +48,7 @@ namespace Arihara.GuideSmoke
           if (!lcs.IsComputable) continue;
           lcs.SetParameters(p.kappa, p.lcsThreshold);
           lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.skeletonizeNum);
-          lcs.WriteLCS(p.outLCSPath, $"lcs-{t}");
+          // lcs.WriteLCS(p.outLCSPath, $"lcs-{t}");
           fRegion3D = lcs.ForwardRegion;
           bRegion3D = lcs.BackwardRegion;
         }
@@ -83,12 +84,95 @@ namespace Arihara.GuideSmoke
             // ridgeRefine.ShowPixelInfo();
             int[,] result = ridgeRefine.GetResults();
             string path = p.outLCSPath + '/' + $"lcs-{t}.txt";
-            // FileIO.WriteLCSFile(path, Array2DTo3D(result, 1), lenX, lenY, lenZ);
-            // FileIO.WriteGradientFile($"./data/gradients-{t}.txt", ridgeRefine.Gradients, lenX, lenY);
+            FileIO.WriteLCSFile(path, Array2DTo3D(result, 1), lenX, lenY, lenZ);
+            FileIO.WriteGradientFile($"./data/gradients-{t}.txt", ridgeRefine.Gradients, lenX, lenY);
           }
         }
 
         Console.WriteLine($"End LCS Calculation");
+      }
+    }
+
+    static void ConstractDataset()
+    {
+      Parameter p = ReadJson("./parameter.json");
+      string baseFolder = @"D:\Projects\CS\FTLE\data\RawData\Dataset";
+      p.skeletonizeNum = 0;
+      p.gaussianNum = 0;
+      p.LcsMethodName = "Threshold";
+      for (int i = 1; i <= 2000; i++)
+      {
+        string folder = baseFolder + '/' + $"{i}";
+        string LCSFolder = folder + "/LCS";
+        Directory.CreateDirectory(LCSFolder);
+        p.outLCSPath = LCSFolder;
+        float[] thresholds = LoadThreshold(folder);
+
+        Console.WriteLine($"Start Calculation LCS No.{i}");
+        string fileName = "t-999_T10_tau0.5";
+        p.lcsThreshold = thresholds[0];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+
+        fileName = "t-999_T10_tau1";
+        p.lcsThreshold = thresholds[1];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+
+        fileName = "t-999_T25_tau0.5";
+        p.lcsThreshold = thresholds[2];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+
+        fileName = "t-999_T25_tau1";
+        p.lcsThreshold = thresholds[3];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+
+        fileName = "t-999_T50_tau0.5";
+        p.lcsThreshold = thresholds[4];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+
+        fileName = "t-999_T50_tau1";
+        p.lcsThreshold = thresholds[5];
+        CalculationLCS(folder + '/' + fileName + ".txt", fileName + "-lcs");
+      }
+
+      float[] LoadThreshold(string folderPath)
+      {
+        string input;
+        using (StreamReader sr = new StreamReader(folderPath + "/property.txt"))
+        {
+          input = sr.ReadToEnd();
+        }
+        string[] lines = input.Split('\n');
+        float[] thre = new float[6];
+        for (int i = 3; i <= 8; i++)
+        {
+          string[] splits = lines[i].Split(':');
+          thre[i - 3] = float.Parse(splits[1]);
+        }
+        return thre;
+      }
+
+      void CalculationLCS(string ftlePath, string lcsFileName)
+      {
+        for (int t = p.startT; t <= p.endT; t += p.integralT)
+        {
+          float[,,] bFTLE = null;
+          bool isLoadingSeccessful = false;
+          int lenX = p.ftleResolutionX;
+          int lenY = p.ftleResolutionY;
+          int lenZ = p.ftleResolutionZ;
+
+          if (FileIO.LoadFTLEFile(ftlePath, ref bFTLE, lenX, lenY, lenZ))
+            isLoadingSeccessful = true;
+
+          if (!isLoadingSeccessful) continue;
+          using (LCS lcs = new LCS(null, bFTLE, lenX, lenY, lenZ, p.deltaX, p.deltaY, p.deltaZ))
+          {
+            if (!lcs.IsComputable) continue;
+            lcs.SetParameters(p.kappa, p.lcsThreshold);
+            lcs.Calculation(p.LcsMethodName, p.gaussianNum, p.skeletonizeNum);
+            lcs.WriteLCS(p.outLCSPath, lcsFileName);
+          }
+        }
       }
     }
 

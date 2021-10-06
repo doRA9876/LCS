@@ -121,23 +121,24 @@ namespace Arihara.GuideSmoke
 
     public void BySimpleThreshold(ref bool[,,] region, float[,,] ftle)
     {
-      Normalize(ref ftle);
+      // Normalize(ref ftle);
 
       region = new bool[lenX, lenY, lenZ];
-      float maxEigen = -100;
-      for (int ix = 0; ix < lenX; ix++)
-      {
-        for (int iy = 0; iy < lenY; iy++)
-        {
-          if (maxEigen < ftle[ix, iy, 0]) maxEigen = ftle[ix, iy, 0];
-        }
-      }
+      // float maxEigen = -100;
+      // for (int ix = 0; ix < lenX; ix++)
+      // {
+      //   for (int iy = 0; iy < lenY; iy++)
+      //   {
+      //     if (maxEigen < ftle[ix, iy, 0]) maxEigen = ftle[ix, iy, 0];
+      //   }
+      // }
 
       for (int ix = 0; ix < lenX; ix++)
       {
         for (int iy = 0; iy < lenY; iy++)
         {
-          if ((maxEigen * this.threshold) < ftle[ix, iy, 0]) region[ix, iy, 0] = true;
+          // if ((maxEigen * this.threshold) < ftle[ix, iy, 0]) region[ix, iy, 0] = true;
+          if (this.threshold < ftle[ix, iy, 0]) region[ix, iy, 0] = true;
           else region[ix, iy, 0] = false;
         }
       }
@@ -163,7 +164,7 @@ namespace Arihara.GuideSmoke
             float dyy = (GetCoordValue(ftle, ix, iy + 1, 0) + GetCoordValue(ftle, ix, iy - 1, 0)
              - 2 * GetCoordValue(ftle, ix, iy, 0)) / (deltaY * deltaY);
             float dxdy = (GetCoordValue(ftle, ix + 1, iy + 1, 0) - GetCoordValue(ftle, ix - 1, iy + 1, 0)
-                        - GetCoordValue(ftle, ix + 1, iy - 1, 0) + GetCoordValue(ftle, ix - 1, iy - 1, 0)) 
+                        - GetCoordValue(ftle, ix + 1, iy - 1, 0) + GetCoordValue(ftle, ix - 1, iy - 1, 0))
                         / (deltaX * deltaY);
             secondDerivative[ix, iy, 0] = dxx;
             secondDerivative[ix, iy, 1] = dyy;

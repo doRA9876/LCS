@@ -77,7 +77,6 @@ namespace Arihara.GuideSmoke
         Refinements();
         PostProcess();
         UpdatePos();
-        GetResults();
         new_positions = null;
       }
     }
@@ -130,7 +129,7 @@ namespace Arihara.GuideSmoke
           {
             Pixel adjacent = you.adjacents[0];
             Vector2 nv = UnitLengthPerpendicular2D(adjacent.pos - you.pos);
-            Vector2 g = gradients[adjacent.ix, adjacent.iy];
+            Vector2 g = gradients[you.ix, you.iy];
             Vector2 rv = Vector2.Dot(nv, g) * nv;
             Vector2 new_pv = new Vector2();
             new_pv = you.pos + this.delta * rv;
@@ -143,7 +142,7 @@ namespace Arihara.GuideSmoke
             foreach (Pixel adjacent in you.adjacents)
             {
               Vector2 nv = UnitLengthPerpendicular2D(adjacent.pos - you.pos);
-              Vector2 g = gradients[adjacent.ix, adjacent.iy];
+              Vector2 g = gradients[you.ix, you.iy];
               rv += Vector2.Dot(nv, g) * nv;
               pu += adjacent.pos;
             }
@@ -153,8 +152,9 @@ namespace Arihara.GuideSmoke
           }
         }
       }
+    }
 
-      Vector2 UnitLengthPerpendicular2D(Vector2 v)
+    Vector2 UnitLengthPerpendicular2D(Vector2 v)
       {
         float x = v.X;
         float y = v.Y;
@@ -170,7 +170,6 @@ namespace Arihara.GuideSmoke
         float k1 = -y * k2 / x;
         return new Vector2(k1, k2);
       }
-    }
 
     private void PostProcess()
     {

@@ -1,8 +1,8 @@
 {
   "forwardFTLEPath": "",
-  "backwardFTLEPath": "D:/Projects/CS/FTLE/data/FTLE/Buoyancy_VC_256x256x1",
+  "backwardFTLEPath": "D:/Projects/CS/FTLE/data/FTLE/Buoyancy_noVC_256x256x1",
   "outLCSPath": "./data/LCS/results",
-  "startT" : 300,
+  "startT" : 200,
   "endT" : 900,
   "integralT" : 50,
   "ftleResolutionX": 256,
@@ -11,15 +11,15 @@
   "deltaX":1,
   "deltaY":1,
   "deltaZ":1,
-  "skeletonizeNum": 5,
+  "skeletonizeNum": 0,
   "gaussianNum": 5,
   "LcsMethodName": "Hessian",
   "lcsThreshold": 0.3,
   "kappa": 0.1,
-  "refinementIteration" : 50,
+  "refinementIteration" : 0,
   "delta" : 0.5,
   "sigma" : 0.25,
   "omega" : 0.05,
   "d_max" : 5,
-  "k_cut": 5
+  "k_cut": 0
 }
